@@ -1,0 +1,138 @@
+## Code
+
+Install nodejs version 16
+
+```
+sudo yum install -y gcc-c++ make
+curl -sL https://rpm.nodesource.com/setup_16.x | sudo -E bash -
+sudo yum install -y nodejs
+```
+
+Install git and pull the repo
+
+```
+sudo yum install -y git
+git clone https://github.com/sam-meech-ward-bci...
+```
+Create a service file
+
+```sh
+sudo vim /etc/systemd/system/NodeServer.service
+```
+
+```
+[Unit]
+Description=My Node Server
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/bin/node /home/ec2-user/lotr/server.js
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=my-node-server
+User=ec2-user
+EnvironmentFile=/home/ec2-user/lotr/app.env
+
+[Install]
+WantedBy=multi-user.target
+```
+
+start the service
+
+```sh
+sudo systemctl enable NodeServer.service
+sudo systemctl start NodeServer.service
+```
+
+Setup FTP
+
+1. sudo su 
+2. yum update -y  
+3. yum install vsftpd
+4. open port 20-21 and 1024-1048
+5. sudo vi /etc/vsftpd/vsftpd.conf
+6.
+anonymous_enable=NO
+pasv_enable=YES
+pasv_min_port=1024
+pasv_max_port=1048
+pasv_address=<Public IP of your instance>
+chroot_local_user=YES
+write_enable=YES
+allow_writeable_chroot=YES
+
+7.
+adduser awsftpuser
+passwd awsftpuser
+sudo usermod -d /etc/httpd/ awsftpuser
+usermod -a -G <your group name> awsftpuser
+sudo systemctl vsftpd  
+
+
+install composer 
+$ cd ~
+$ sudo curl -sS https://getcomposer.org/installer | sudo php
+$ sudo mv composer.phar /usr/local/bin/composer
+$ sudo ln -s /usr/local/bin/composer /usr/bin/composer
+$ sudo chmod +x /usr/bin/composer
+then you can run 
+$ sudo composer install
+
+install 
+
+1. amazon-linux-extras install php
+1.1 
+sudo yum install php-cli php-xml php-json php-mbstring php-process php-common php-fpm php-zip php-mysqlnd git -y
+2. https://pecl.php.net/package/redis/5.3.7/windows
+3. 
+sudo yum install httpd -y
+sudo systemctl restart httpd
+sudo systemctl enable httpd
+
+cd /var/www/html
+sudo git clone https://github.com/laravel/laravel.git
+
+sudo chown -R ec2-user:apache /var/www
+sudo chmod 2775 /var/www && find /var/www -type d -exec sudo chmod 2775 {} \;
+find /var/www -type f -exec sudo chmod 0664 {} \;
+
+cd /var/www/html/laravel
+composer install
+
+sudo vim /etc/httpd/conf/httpd.conf
+
+<VirtualHost *:80>
+       ServerName laravel.example.com
+       DocumentRoot /var/www/html/laravel/public<Directory /var/www/html/laravel>
+              AllowOverride All
+       </Directory>
+</VirtualHost>
+
+<Directory /var/www/html/app/public>
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+DocumentRoot /var/www/html/app/public
+sudo a2enmod rewrite
+sudo service apache2 restart
+
+
+Alias / /var/www/html/<project_folder_name>/public/
+<Directory "/var/www/html/<project_folder_name>/public">
+        AllowOverride All
+        Order allow,deny
+        allow from all
+</Directory>
+
+sudo chmod -R 777 /var/www/html/laravel/storage
+sudo chmod -R 777 /var/www/html/laravel/storage/logs
+
+service httpd restart
+cd /var/www/html/laravel
+
+php artisan migrate
+
+ sudo yum install -y amazon-efs-utils

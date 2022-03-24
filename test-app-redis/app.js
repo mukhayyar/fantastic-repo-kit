@@ -1,43 +1,44 @@
 const express = require("express");
 const axios = require("axios");
 const redis = require("redis");
+const { promisify } = require("util");
 const app = express();
 
-const redisPort = 6968
-const client = redis.createClient(redisPort);
+const redisPort = 6379;
+const redisClient = redis.createClient(redisPort);
 
-client.on("error", (err) => {
-    console.log(err);
-})
-
+redisClient.on("error", (err) => {
+    console.error(err);
+});
+redisClient.on("ready", () => {
+    console.log("Redis is ready");
+});
+const getAsync = promisify(redisClient.get).bind(redisClient);
 app.get("/jobs", async (req, res) => {
+    await redisClient.connect();
     const searchTerm = req.query.search;
     try {
-        await client.connect();
-        client.get(searchTerm, async (err, jobs) => {
-            
-            if (err) throw err;
-    
-            if (jobs) {
-                res.status(200).send({
-                    jobs: JSON.parse(jobs),
-                    message: "data retrieved from the cache"
-                });
-            }
-            else {
-                const jobs = await axios.get(`https://chroniclingamerica.loc.gov/search/titles/results/?terms=michigan&format=json`);
-                client.setex(searchTerm, 600, JSON.stringify(jobs.data));
-                res.status(200).send({
-                    jobs: jobs.data,
-                    message: "cache miss"
-                });
-            }
-        });
+        const cachedData = JSON.parse(await getAsync(searchTerm));
+        if(cachedData) {
+            data = cachedData;
+            res.status(200).send({
+                jobs: data,
+                message: 'success'
+            });
+        } else {
+            const news = await axios.get(`https://chroniclingamerica.loc.gov/search/titles/results/?terms=michigan&format=json`);
+            redisClient.set(searchTerm, 600, JSON.stringify(news.data));
+            res.status(200).send({
+                jobs: data,
+                message: 'success'
+            });
+        }
+
     } catch(err) {
         res.status(500).send({message: err.message});
     }
 });
 
-app.listen(process.env.PORT || 3000, () => {
+app.listen(process.env.PORT || 3001, () => {
     console.log("Node server started");
 });
