@@ -142,3 +142,5 @@ php artisan migrate
 $ sudo yum install gcc This may return an "already installed" message. That's OK.
 
 $ wget http://download.redis.io/redis-stable.tar.gz && tar xvzf redis-stable.tar.gz && cd redis-stable && make 
+
+#!/bin/bash
